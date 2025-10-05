@@ -1,73 +1,179 @@
-# Welcome to your Lovable project
+# Zestora - Cook Smart with What You Have
 
-## Project info
+A modern, AI-powered recipe generation platform built with React, TypeScript, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/dfee8afd-9dc7-47a3-80ae-ac365b6857e5
+## Features
 
-## How can I edit this code?
+- 🎨 **Beautiful UI** - Warm, food-focused design with glassmorphism and micro-interactions
+- 🔐 **Authentication** - Login/Signup with email or social providers (Google, Apple)
+- 🍳 **Recipe Generation** - AI-powered recipe suggestions based on your ingredients
+- 🏷️ **Smart Tagging** - Easy ingredient input with tag-based interface
+- 🚫 **Allergy-Aware** - Set dietary restrictions and get safe recipes
+- ❤️ **Save Recipes** - Save your favorite recipes for later
+- 📱 **Fully Responsive** - Works perfectly on mobile, tablet, and desktop
+- 🌙 **Dark Mode** - Toggle between light and dark themes
+- ✨ **Animations** - Smooth transitions, card flips, and shimmer loaders
 
-There are several ways of editing your application.
+## Project Structure
 
-**Use Lovable**
+```
+src/
+├── components/
+│   ├── ui/              # Reusable UI primitives (Button, Input, Card, etc.)
+│   └── shared/          # Shared components (Header, Footer, RecipeCard)
+├── pages/               # Route pages
+│   ├── Landing.tsx      # Home page with hero
+│   ├── Login.tsx        # Login page
+│   ├── Signup.tsx       # Signup page
+│   ├── Generate.tsx     # Recipe generation (core feature)
+│   ├── MyRecipes.tsx    # User's saved/uploaded recipes
+│   ├── Explore.tsx      # Browse recipes
+│   ├── Profile.tsx      # User profile
+│   └── About.tsx        # About page
+├── data/
+│   └── mockRecipes.ts   # Sample recipe data for preview
+├── lib/
+│   └── hooks/
+│       └── useAuth.tsx  # Authentication context and logic
+└── assets/              # Generated images
+```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dfee8afd-9dc7-47a3-80ae-ac365b6857e5) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v16 or higher)
+- npm or yarn
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+1. Clone the repository:
+```bash
 git clone <YOUR_GIT_URL>
+cd zestora
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install dependencies:
+```bash
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open [http://localhost:8080](http://localhost:8080) in your browser
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Demo Credentials
 
-**Use GitHub Codespaces**
+For testing the authentication:
+- **Email:** demo@zestora.test
+- **Password:** demopass
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Design System
 
-## What technologies are used for this project?
+### Colors (HSL)
 
-This project is built with:
+- **Primary (Zesty Orange):** `hsl(14 100% 67%)` - #FF7B54
+- **Secondary (Fresh Mint):** `hsl(162 46% 54%)` - #56BFA3
+- **Accent (Blue):** `hsl(205 92% 44%)` - #0D74CE
+- **Background:** `hsl(42 100% 98%)` - #F8FAF5
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Typography
 
-## How can I deploy this project?
+- **Headings:** Poppins (400, 500, 600, 700)
+- **Body:** Inter (300, 400, 500, 600)
 
-Simply open [Lovable](https://lovable.dev/projects/dfee8afd-9dc7-47a3-80ae-ac365b6857e5) and click on Share -> Publish.
+### Key Features
 
-## Can I connect a custom domain to my Lovable project?
+- **Gradients:** Primary and secondary gradients defined in CSS variables
+- **Shadows:** Soft, medium, and strong shadow system
+- **Animations:** Shimmer, fade-in, scale-in, float, and card flip effects
+- **Border Radius:** Generous rounded corners (1rem default)
 
-Yes, you can!
+## Mock API Integration
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The app currently uses mock data for demonstration. To integrate with a real backend:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Recipe Generation
+
+Replace the mock logic in `src/pages/Generate.tsx`:
+
+```typescript
+// Current mock implementation
+const handleGenerate = async () => {
+  // ... filtering logic
+};
+
+// Replace with:
+const handleGenerate = async () => {
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ingredients,
+      allergies: selectedAllergies,
+      cuisine,
+      maxCookTime: maxCookTime[0],
+    }),
+  });
+  const data = await response.json();
+  setRecipes(data.recipes);
+};
+```
+
+### Authentication
+
+Update `src/lib/hooks/useAuth.tsx` to call your authentication endpoints:
+
+```typescript
+// Replace mock login/signup/socialLogin functions
+const login = async (email: string, password: string) => {
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await response.json();
+  setUser(data.user);
+  localStorage.setItem('token', data.token);
+};
+```
+
+## Contact Details
+
+All footer contact information uses these exact details:
+
+**Zestora Labs**  
+12A, Marine Lines  
+Mumbai 400020, India
+
+**Phone:** +91 22 1234 5678  
+**Mobile:** +91 98765 43210  
+**Email:** contact@zestora.example
+
+To change these details, edit `src/components/shared/Footer.tsx`.
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+The build output will be in the `dist/` directory, ready to deploy to any static hosting service.
+
+## Technologies Used
+
+- **React 18** - UI library
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - UI component library
+- **React Router** - Client-side routing
+- **Lucide React** - Icon library
+- **Sonner** - Toast notifications
+
+## License
+
+© 2025 Zestora Labs. All rights reserved.

@@ -8,13 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Header } from "@/components/shared/Header";
-import { ChefHat, Chrome, Apple } from "lucide-react";
+import { ChefHat } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, socialLogin } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -30,21 +30,8 @@ export default function Login() {
       await login(email, password);
       toast.success("Welcome back!");
       navigate(nextUrl);
-    } catch (error) {
-      toast.error("Invalid email or password. Try demo@zestora.test / demopass");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
-    setIsLoading(true);
-    try {
-      await socialLogin(provider);
-      toast.success(`Logged in with ${provider}!`);
-      navigate(nextUrl);
-    } catch (error) {
-      toast.error(`Failed to login with ${provider}`);
+    } catch (error: any) {
+      toast.error(error.message || "Invalid credentials");
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +40,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <Card className="w-full max-w-md p-8 glass animate-scale-in">
           {/* Logo */}
@@ -70,35 +56,13 @@ export default function Login() {
             Log in to continue to your recipes
           </p>
 
-          {/* Social Login */}
-          <div className="space-y-3 mb-6">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleSocialLogin('google')}
-              disabled={isLoading}
-            >
-              <Chrome className="mr-2 h-5 w-5" />
-              Continue with Google
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleSocialLogin('apple')}
-              disabled={isLoading}
-            >
-              <Apple className="mr-2 h-5 w-5" />
-              Continue with Apple
-            </Button>
-          </div>
-
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">
-                Or continue with email
+                Continue with email
               </span>
             </div>
           </div>

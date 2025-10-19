@@ -20,6 +20,10 @@ import {
 import { Recipe } from "@/data/mockRecipes";
 import { toast } from "sonner";
 
+// Import jsPDF and autoTable
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,13 +33,11 @@ export default function RecipeDetail() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   useEffect(() => {
-    // If recipe is passed via state
     if (location.state?.recipe) {
       setRecipe(location.state.recipe);
       return;
     }
 
-    // Fallback: search in mockRecipes
     import("@/data/mockRecipes").then(({ mockRecipes }) => {
       const found = mockRecipes.find((r) => r.id === id);
       if (found) {
@@ -66,20 +68,62 @@ export default function RecipeDetail() {
     toast.success(isSaved ? "Removed from saved recipes" : "Saved to your recipes");
   };
 
+  // ------------------ BEAUTIFUL PDF SHOPPING LIST ------------------
   const handleDownloadShoppingList = () => {
-    const content = recipe.ingredients
-      .map(
-        (i) =>
-          `${i.name} - ${i.quantity}${i.unit ? " " + i.unit : ""}`
-      )
-      .join("\n");
-    const blob = new Blob([content], { type: "text/plain" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${recipe.title}-shopping-list.txt`;
-    link.click();
-    toast.success("Shopping list downloaded!");
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor("#ff6347"); // Zestora theme color
+    doc.text("Zestora Kitchen Shopping List", 105, 20, { align: "center" });
+
+    // Subheading: Recipe Title
+    doc.setFontSize(16);
+    doc.setTextColor("#000");
+    doc.text(recipe.title, 105, 30, { align: "center" });
+
+    // Table data
+    const tableData = recipe.ingredients.map((i) => [
+      i.name,
+      i.quantity ? `${i.quantity} ${i.unit || ""}` : "",
+    ]);
+
+    autoTable(doc as any, {
+      head: [["Ingredient", "Quantity"]],
+      body: tableData,
+      startY: 40,
+      theme: "grid",
+      headStyles: {
+        fillColor: "#ff6347",
+        textColor: "#fff",
+        fontStyle: "bold",
+      },
+      bodyStyles: {
+        fillColor: "#fff",
+        textColor: "#000",
+      },
+      alternateRowStyles: {
+        fillColor: "#f2f2f2",
+      },
+      didDrawPage: (data) => {
+        const internal = (doc as any).internal;
+        const pageCount = internal.getNumberOfPages?.() || 1;
+        const pageNumber = internal.getCurrentPageInfo?.()?.pageNumber || 1;
+        doc.setFontSize(10);
+        doc.setTextColor("#999");
+        doc.text(
+          `Page ${pageNumber} of ${pageCount}`,
+          doc.internal.pageSize.width - 20,
+          doc.internal.pageSize.height - 10,
+          { align: "right" }
+        );
+      },
+    });
+
+    doc.save(`${recipe.title}-shopping-list.pdf`);
+    toast.success("Shopping list PDF downloaded!");
   };
+  // ------------------------------------------------------------------
 
   const handleShare = () => {
     if (navigator.share) {
@@ -102,7 +146,10 @@ export default function RecipeDetail() {
         {/* Hero Image */}
         <div className="relative h-96 overflow-hidden">
           <motion.img
-            src={recipe.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop"}
+            src={
+              recipe.image ||
+              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop"
+            }
             alt={recipe.title}
             className="w-full h-full object-cover"
             initial={{ scale: 1.1 }}
@@ -156,7 +203,9 @@ export default function RecipeDetail() {
                 onClick={handleSave}
                 className={`btn-scale ${isSaved ? "bg-primary" : ""}`}
               >
-                <Heart className={`mr-2 h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+                <Heart
+                  className={`mr-2 h-5 w-5 ${isSaved ? "fill-current" : ""}`}
+                />
                 {isSaved ? "Saved" : "Save"}
               </Button>
               <Button
@@ -196,7 +245,10 @@ export default function RecipeDetail() {
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <Checkbox id={`ingredient-${i}`} />
-                    <label htmlFor={`ingredient-${i}`} className="flex-1 cursor-pointer">
+                    <label
+                      htmlFor={`ingredient-${i}`}
+                      className="flex-1 cursor-pointer"
+                    >
                       <span className="font-medium">{ingredient.name}</span>
                       {ingredient.quantity && (
                         <span className="text-muted-foreground ml-2">
@@ -219,7 +271,9 @@ export default function RecipeDetail() {
                 <motion.div
                   className="absolute left-6 top-0 w-0.5 bg-gradient-primary"
                   initial={{ height: 0 }}
-                  animate={{ height: `${(completedSteps.length / recipe.steps.length) * 100}%` }}
+                  animate={{
+                    height: `${(completedSteps.length / recipe.steps.length) * 100}%`,
+                  }}
                   transition={{ duration: 0.3 }}
                 />
                 <div className="space-y-6">
@@ -239,14 +293,26 @@ export default function RecipeDetail() {
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {completedSteps.includes(i) ? <Check className="h-5 w-5" /> : i + 1}
+                        {completedSteps.includes(i) ? (
+                          <Check className="h-5 w-5" />
+                        ) : (
+                          i + 1
+                        )}
                       </button>
                       <div
                         className={`flex-1 p-4 rounded-lg transition-all ${
-                          completedSteps.includes(i) ? "bg-primary/10" : "bg-muted/30"
+                          completedSteps.includes(i)
+                            ? "bg-primary/10"
+                            : "bg-muted/30"
                         }`}
                       >
-                        <p className={completedSteps.includes(i) ? "line-through opacity-70" : ""}>
+                        <p
+                          className={
+                            completedSteps.includes(i)
+                              ? "line-through opacity-70"
+                              : ""
+                          }
+                        >
                           {step}
                         </p>
                       </div>
@@ -265,34 +331,41 @@ export default function RecipeDetail() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="font-medium">Calories</span>
-                    <span className="text-muted-foreground">{recipe.nutrition.calories}</span>
+                    <span className="text-muted-foreground">
+                      {recipe.nutrition.calories}
+                    </span>
                   </div>
                   <Progress value={recipe.nutrition.calories / 25} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="font-medium">Protein</span>
-                    <span className="text-muted-foreground">{recipe.nutrition.protein}g</span>
+                    <span className="text-muted-foreground">
+                      {recipe.nutrition.protein}g
+                    </span>
                   </div>
                   <Progress value={recipe.nutrition.protein * 2} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="font-medium">Carbs</span>
-                    <span className="text-muted-foreground">{recipe.nutrition.carbs}g</span>
+                    <span className="text-muted-foreground">
+                      {recipe.nutrition.carbs}g
+                    </span>
                   </div>
                   <Progress value={recipe.nutrition.carbs / 1.5} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="font-medium">Fats</span>
-                    <span className="text-muted-foreground">{recipe.nutrition.fats}g</span>
+                    <span className="text-muted-foreground">
+                      {recipe.nutrition.fats}g
+                    </span>
                   </div>
                   <Progress value={recipe.nutrition.fats * 2} className="h-2" />
                 </div>
               </div>
             </div>
-
           </motion.div>
         </div>
       </main>

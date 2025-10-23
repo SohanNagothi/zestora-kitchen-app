@@ -19,8 +19,6 @@ import {
 } from "lucide-react";
 import { Recipe } from "@/data/mockRecipes";
 import { toast } from "sonner";
-
-// Import jsPDF and autoTable
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -28,20 +26,34 @@ export default function RecipeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [recipe, setRecipe] = useState<Recipe | any | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
+  // ✅ Normalize both uploaded and generated recipes
+  const normalizeRecipe = (r: any) => ({
+    ...r,
+    image: r.imageUrl || r.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop",
+    steps: r.instructions || r.steps || [],
+    ingredients: r.ingredients || [],
+    nutrition: r.nutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    allergens: r.allergens || [],
+    cuisine: r.cuisine || "General",
+    cookTime: r.cookTime || 30,
+    servings: r.servings || 2,
+    rating: r.rating || 4.5,
+  });
+
   useEffect(() => {
     if (location.state?.recipe) {
-      setRecipe(location.state.recipe);
+      setRecipe(normalizeRecipe(location.state.recipe));
       return;
     }
 
     import("@/data/mockRecipes").then(({ mockRecipes }) => {
       const found = mockRecipes.find((r) => r.id === id);
       if (found) {
-        setRecipe(found);
+        setRecipe(normalizeRecipe(found));
       } else {
         toast.error("Recipe not found");
         navigate("/explore");
@@ -68,23 +80,17 @@ export default function RecipeDetail() {
     toast.success(isSaved ? "Removed from saved recipes" : "Saved to your recipes");
   };
 
-  // ------------------ BEAUTIFUL PDF SHOPPING LIST ------------------
   const handleDownloadShoppingList = () => {
     const doc = new jsPDF();
-
-    // Header
     doc.setFontSize(22);
-    doc.setTextColor("#ff6347"); // Zestora theme color
+    doc.setTextColor("#ff6347");
     doc.text("Zestora Kitchen Shopping List", 105, 20, { align: "center" });
-
-    // Subheading: Recipe Title
     doc.setFontSize(16);
     doc.setTextColor("#000");
     doc.text(recipe.title, 105, 30, { align: "center" });
 
-    // Table data
-    const tableData = recipe.ingredients.map((i) => [
-      i.name,
+    const tableData = (recipe.ingredients || []).map((i: any) => [
+      i.name || i.ingredient || "Unknown",
       i.quantity ? `${i.quantity} ${i.unit || ""}` : "",
     ]);
 
@@ -93,37 +99,14 @@ export default function RecipeDetail() {
       body: tableData,
       startY: 40,
       theme: "grid",
-      headStyles: {
-        fillColor: "#ff6347",
-        textColor: "#fff",
-        fontStyle: "bold",
-      },
-      bodyStyles: {
-        fillColor: "#fff",
-        textColor: "#000",
-      },
-      alternateRowStyles: {
-        fillColor: "#f2f2f2",
-      },
-      didDrawPage: (data) => {
-        const internal = (doc as any).internal;
-        const pageCount = internal.getNumberOfPages?.() || 1;
-        const pageNumber = internal.getCurrentPageInfo?.()?.pageNumber || 1;
-        doc.setFontSize(10);
-        doc.setTextColor("#999");
-        doc.text(
-          `Page ${pageNumber} of ${pageCount}`,
-          doc.internal.pageSize.width - 20,
-          doc.internal.pageSize.height - 10,
-          { align: "right" }
-        );
-      },
+      headStyles: { fillColor: "#ff6347", textColor: "#fff", fontStyle: "bold" },
+      bodyStyles: { fillColor: "#fff", textColor: "#000" },
+      alternateRowStyles: { fillColor: "#f2f2f2" },
     });
 
     doc.save(`${recipe.title}-shopping-list.pdf`);
     toast.success("Shopping list PDF downloaded!");
   };
-  // ------------------------------------------------------------------
 
   const handleShare = () => {
     if (navigator.share) {
@@ -146,10 +129,7 @@ export default function RecipeDetail() {
         {/* Hero Image */}
         <div className="relative h-96 overflow-hidden">
           <motion.img
-            src={
-              recipe.image ||
-              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop"
-            }
+            src={recipe.image}
             alt={recipe.title}
             className="w-full h-full object-cover"
             initial={{ scale: 1.1 }}
@@ -169,10 +149,10 @@ export default function RecipeDetail() {
             <div className="mb-6">
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="secondary">{recipe.cuisine}</Badge>
-                {recipe.allergens.length === 0 && (
+                {(recipe.allergens?.length || 0) === 0 && (
                   <Badge variant="outline">Allergen-Free</Badge>
                 )}
-                {recipe.allergens.map((allergen) => (
+                {recipe.allergens?.map((allergen: string) => (
                   <Badge key={allergen} variant="destructive">
                     No {allergen}
                   </Badge>
@@ -235,30 +215,38 @@ export default function RecipeDetail() {
               <h2 className="text-2xl font-heading font-semibold mb-4">
                 Ingredients
               </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {recipe.ingredients.map((ingredient, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <Checkbox id={`ingredient-${i}`} />
-                    <label
-                      htmlFor={`ingredient-${i}`}
-                      className="flex-1 cursor-pointer"
+              {recipe.ingredients.length > 0 ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {recipe.ingredients.map((ingredient: any, i: number) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <span className="font-medium">{ingredient.name}</span>
-                      {ingredient.quantity && (
-                        <span className="text-muted-foreground ml-2">
-                          - {ingredient.quantity} {ingredient.unit}
+                      <Checkbox id={`ingredient-${i}`} />
+                      <label
+                        htmlFor={`ingredient-${i}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <span className="font-medium">
+                          {ingredient.name || ingredient.ingredient || "Unnamed"}
                         </span>
-                      )}
-                    </label>
-                  </motion.div>
-                ))}
-              </div>
+                        {ingredient.quantity && (
+                          <span className="text-muted-foreground ml-2">
+                            - {ingredient.quantity} {ingredient.unit || ""}
+                          </span>
+                        )}
+                      </label>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No ingredients available.
+                </p>
+              )}
             </div>
 
             {/* Steps */}
@@ -266,60 +254,66 @@ export default function RecipeDetail() {
               <h2 className="text-2xl font-heading font-semibold mb-4">
                 Instructions
               </h2>
-              <div className="relative">
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-muted" />
-                <motion.div
-                  className="absolute left-6 top-0 w-0.5 bg-gradient-primary"
-                  initial={{ height: 0 }}
-                  animate={{
-                    height: `${(completedSteps.length / recipe.steps.length) * 100}%`,
-                  }}
-                  transition={{ duration: 0.3 }}
-                />
-                <div className="space-y-6">
-                  {recipe.steps.map((step, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex gap-4 relative"
-                    >
-                      <button
-                        onClick={() => toggleStep(i)}
-                        className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all btn-scale z-10 ${
-                          completedSteps.includes(i)
-                            ? "bg-gradient-primary text-white"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+              {recipe.steps.length > 0 ? (
+                <div className="relative">
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-muted" />
+                  <motion.div
+                    className="absolute left-6 top-0 w-0.5 bg-gradient-primary"
+                    initial={{ height: 0 }}
+                    animate={{
+                      height: `${(completedSteps.length / recipe.steps.length) * 100}%`,
+                    }}
+                    transition={{ duration: 0.3 }}
+                  />
+                  <div className="space-y-6">
+                    {recipe.steps.map((step: string, i: number) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex gap-4 relative"
                       >
-                        {completedSteps.includes(i) ? (
-                          <Check className="h-5 w-5" />
-                        ) : (
-                          i + 1
-                        )}
-                      </button>
-                      <div
-                        className={`flex-1 p-4 rounded-lg transition-all ${
-                          completedSteps.includes(i)
-                            ? "bg-primary/10"
-                            : "bg-muted/30"
-                        }`}
-                      >
-                        <p
-                          className={
+                        <button
+                          onClick={() => toggleStep(i)}
+                          className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all btn-scale z-10 ${
                             completedSteps.includes(i)
-                              ? "line-through opacity-70"
-                              : ""
-                          }
+                              ? "bg-gradient-primary text-white"
+                              : "bg-muted text-muted-foreground"
+                          }`}
                         >
-                          {step}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
+                          {completedSteps.includes(i) ? (
+                            <Check className="h-5 w-5" />
+                          ) : (
+                            i + 1
+                          )}
+                        </button>
+                        <div
+                          className={`flex-1 p-4 rounded-lg transition-all ${
+                            completedSteps.includes(i)
+                              ? "bg-primary/10"
+                              : "bg-muted/30"
+                          }`}
+                        >
+                          <p
+                            className={
+                              completedSteps.includes(i)
+                                ? "line-through opacity-70"
+                                : ""
+                            }
+                          >
+                            {step}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No instructions available.
+                </p>
+              )}
             </div>
 
             {/* Nutrition */}

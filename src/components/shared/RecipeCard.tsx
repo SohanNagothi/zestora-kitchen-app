@@ -18,9 +18,11 @@ export function RecipeCard({ recipe, onView, onSave, isSaved }: RecipeCardProps)
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const getImageSrc = () => {
-    if (!recipe.image) return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop";
-    return recipe.image;
-  };
+  if (recipe.imageUrl) return recipe.imageUrl; // ✅ from S3
+  if (recipe.image) return recipe.image;       // ✅ from mock or local recipes
+  return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=800&fit=crop"; // fallback
+};
+
 
   return (
     <Card className="group overflow-hidden rounded-2xl border-border transition-all duration-300 cursor-pointer">

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 // Define Recipe type
 interface Recipe {
-  id: string; // recipeId
+  id: string; // recipeId from DynamoDB
   title: string;
   author: string;
   cuisine: string;
@@ -20,27 +20,24 @@ interface Recipe {
   ingredients: any[];
   instructions: string[];
   imageUrl: string;
+  allergens?: string[];
 }
-
-// Mock saved recipes (static for now)
-import { mockRecipes } from "@/data/mockRecipes";
 
 export default function MyRecipes() {
   const navigate = useNavigate();
-  const [savedRecipes] = useState<Recipe[]>(mockRecipes.slice(0, 2));
   const [uploadedRecipes, setUploadedRecipes] = useState<Recipe[]>([]);
-  const [drafts] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const USER_ID = "user-001"; // must match the ID used in Upload
+  const USER_ID = "user-001"; // replace with actual logged-in user ID
 
   useEffect(() => {
     const fetchUploadedRecipes = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `https://43avp6qrkvgyqaw3n7ugcvytly0wyzvq.lambda-url.us-east-1.on.aws/?userId=${USER_ID}`
+          `https://vixg42ras35hx2a4gnatsyyibm0ayoew.lambda-url.us-east-1.on.aws/?userId=${USER_ID}`
         );
+
         if (!res.ok) {
           const errorData = await res.json();
           console.error("Error fetching recipes:", errorData);
@@ -48,9 +45,25 @@ export default function MyRecipes() {
           setLoading(false);
           return;
         }
+
         const data = await res.json();
         console.log("Fetched uploaded recipes:", data.recipes);
-        setUploadedRecipes(data.recipes || []);
+
+        // Normalize data to prevent undefined values
+        const normalizedRecipes: Recipe[] = (data.recipes || []).map((item: any) => ({
+          id: item.recipeId,
+          title: item.title || "Untitled Recipe",
+          author: item.author || "Unknown",
+          cuisine: item.cuisine || "Other",
+          cookTime: item.cookTime || "0",
+          servings: item.servings || "1",
+          ingredients: item.ingredients || [],
+          instructions: item.instructions || [],
+          imageUrl: item.imageUrl || "/placeholder-image.png",
+          allergens: item.allergens || [],
+        }));
+
+        setUploadedRecipes(normalizedRecipes);
       } catch (err) {
         console.error("Fetch error:", err);
         toast.error("Failed to fetch uploaded recipes.");
@@ -63,10 +76,21 @@ export default function MyRecipes() {
   }, []);
 
   const handleViewRecipe = (recipe: Recipe) => {
-    toast.info("Recipe detail view would open here");
-  };
+      // Navigate to recipe detail page with recipe id
+      navigate(`/recipe/${recipe.id}`, { state: { recipe } });
+    };
 
-  const EmptyState = ({ title, description, actionText, onAction }: { title: string; description: string; actionText: string; onAction: () => void }) => (
+  const EmptyState = ({
+    title,
+    description,
+    actionText,
+    onAction,
+  }: {
+    title: string;
+    description: string;
+    actionText: string;
+    onAction: () => void;
+  }) => (
     <div className="text-center py-16 px-4">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
         <Plus className="h-8 w-8 text-muted-foreground" />
@@ -88,7 +112,7 @@ export default function MyRecipes() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl md:text-5xl font-heading font-bold mb-2">My Recipes</h1>
-            <p className="text-xl text-muted-foreground">Manage your saved and uploaded recipes</p>
+            <p className="text-xl text-muted-foreground">Manage your uploaded recipes</p>
           </div>
           <Button onClick={() => navigate("/upload")} className="btn-scale">
             <Plus className="mr-2 h-5 w-5" />
@@ -96,37 +120,32 @@ export default function MyRecipes() {
           </Button>
         </div>
 
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-4">
+        <Tabs defaultValue="uploaded" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="saved">Saved</TabsTrigger>
             <TabsTrigger value="uploaded">Uploaded</TabsTrigger>
-            <TabsTrigger value="drafts">Drafts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
             {loading ? (
               <p className="text-center py-16">Loading recipes...</p>
-            ) : [...savedRecipes, ...uploadedRecipes].length > 0 ? (
+            ) : uploadedRecipes.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...savedRecipes, ...uploadedRecipes].map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} onView={() => handleViewRecipe(recipe)} isSaved={savedRecipes.includes(recipe)} />
+                {uploadedRecipes.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    onView={() => handleViewRecipe(recipe)}
+                  />
                 ))}
               </div>
             ) : (
-              <EmptyState title="No recipes yet" description="Start by generating a recipe or uploading your own!" actionText="Generate Recipe" onAction={() => navigate("/generate")} />
-            )}
-          </TabsContent>
-
-          <TabsContent value="saved" className="space-y-6">
-            {savedRecipes.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {savedRecipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} onView={() => handleViewRecipe(recipe)} isSaved={true} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState title="No saved recipes" description="Save recipes you love to find them easily later" actionText="Explore Recipes" onAction={() => navigate("/explore")} />
+              <EmptyState
+                title="No recipes yet"
+                description="Start by uploading your own recipes!"
+                actionText="Upload Recipe"
+                onAction={() => navigate("/upload")}
+              />
             )}
           </TabsContent>
 
@@ -136,19 +155,20 @@ export default function MyRecipes() {
             ) : uploadedRecipes.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {uploadedRecipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} onView={() => handleViewRecipe(recipe)} />
+                  <RecipeCard
+                    key={recipe.id}
+                    recipe={recipe}
+                    onView={() => handleViewRecipe(recipe)}
+                  />
                 ))}
               </div>
             ) : (
-              <EmptyState title="No uploaded recipes" description="Share your favorite recipes with the Zestora community" actionText="Upload Recipe" onAction={() => navigate("/upload")} />
-            )}
-          </TabsContent>
-
-          <TabsContent value="drafts" className="space-y-6">
-            {drafts.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">{drafts.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} onView={() => handleViewRecipe(recipe)} />)}</div>
-            ) : (
-              <EmptyState title="No drafts" description="Your draft recipes will appear here" actionText="Upload Recipe" onAction={() => navigate("/upload")} />
+              <EmptyState
+                title="No uploaded recipes"
+                description="Share your favorite recipes with the Zestora community"
+                actionText="Upload Recipe"
+                onAction={() => navigate("/upload")}
+              />
             )}
           </TabsContent>
         </Tabs>

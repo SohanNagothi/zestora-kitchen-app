@@ -111,8 +111,8 @@ export default function MyRecipes() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-2">My Recipes</h1>
-            <p className="text-xl text-muted-foreground">Manage your uploaded recipes</p>
+            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-2">Community Recipes</h1>
+            <p className="text-xl text-muted-foreground">See uploaded recipes by others from community</p>
           </div>
           <Button onClick={() => navigate("/upload")} className="btn-scale">
             <Plus className="mr-2 h-5 w-5" />

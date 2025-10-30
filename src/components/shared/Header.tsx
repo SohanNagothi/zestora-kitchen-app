@@ -38,7 +38,7 @@ export function Header() {
     { name: "Home", path: "/" },
     { name: "Generate", path: "/generate", protected: true },
     { name: "Upload", path: "/upload", protected: true },
-    { name: "My Recipes", path: "/my-recipes", protected: true },
+    { name: "Community Recipes", path: "/my-recipes", protected: true },
     { name: "Explore", path: "/explore" },
   ];
 

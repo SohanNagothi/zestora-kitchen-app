@@ -39,12 +39,10 @@ export default function Explore() {
   const fetchRecipes = async (query = "") => {
     try {
       setLoading(true);
-      const url = query
-        ? `${API_URL}?q=${encodeURIComponent(query)}`
-        : API_URL;
 
-      const res = await fetch(url);
+      const res = await fetch(API_URL + (query ? `?q=${encodeURIComponent(query)}` : ""));
       const data = await res.json();
+
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch recipes");
 
@@ -71,7 +69,12 @@ export default function Explore() {
       }));
 
       setRecipes(normalized);
-      setFiltered(normalized);
+      // Apply cuisine filter if already selected
+      if (selectedCuisine && selectedCuisine !== "All") {
+        setFiltered(normalized.filter((r) => r.cuisine === selectedCuisine));
+      } else {
+        setFiltered(normalized);
+      }
     } catch (err: any) {
       console.error("Fetch error:", err);
       toast.error("Failed to load recipes. Please try again later.");
@@ -165,14 +168,12 @@ export default function Explore() {
 
         {/* Recipe Grid */}
         {!loading && filtered.length > 0 && (
-          <motion.div
-            layout
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
+          <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {filtered.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}
+                // ✅ Pass full recipe object via state
                 onView={() => navigate(`/recipe/${recipe.id}`, { state: { recipe } })}
                 onSave={() => handleSaveRecipe(recipe.id)}
                 isSaved={savedRecipes.has(recipe.id)}

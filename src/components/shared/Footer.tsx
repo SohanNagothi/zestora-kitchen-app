@@ -132,14 +132,14 @@ export function Footer() {
               <li className="flex items-center gap-2 text-background/70">
                 <Phone className="h-5 w-5 flex-shrink-0" />
                 <div>
-                  <div>+91 22 1234 5678</div>
-                  <div>+91 98765 43210</div>
+                  <div>+91 88502 75528</div>
+                  <div>+91 88210 77077</div>
                 </div>
               </li>
               <li className="flex items-center gap-2 text-background/70">
                 <Mail className="h-5 w-5 flex-shrink-0" />
-                <a href="mailto:contact@zestora.example" className="hover:text-background">
-                  contact@zestora.example
+                <a href="mailto:zestora123@gmail.com" className="hover:text-background">
+                  zestora123@gmail.com
                 </a>
               </li>
             </ul>
